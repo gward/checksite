@@ -1,13 +1,20 @@
 """check site status and send events to Kafka"""
 
 import dataclasses
+import json
+import logging
 import os
+import socket
+import sys
 import time
 from typing import Optional
 
+import confluent_kafka as kafka
 import requests
 
 from . import config
+
+logger = logging.getLogger(__name__)
 
 
 @dataclasses.dataclass
@@ -41,15 +48,15 @@ def check_site(cfg: config.Config) -> SiteStatus:
     # works. Also, this is likely to run in a new process every time (eg.
     # triggered by cron), so it's not worth the bother of creating a
     # Session.
+    logger.debug('Checking site: GET %s', cfg.site_url)
     t0 = time.time()
-    error: Optional[str]
+    error: Optional[str] = None
     try:
         resp = requests.get(cfg.site_url)
     except requests.exceptions.RequestException as err:
         error = str(err)
         status = None
     else:
-        error = None
         status = resp.status_code
 
     t1 = time.time()
@@ -70,11 +77,59 @@ def check_site(cfg: config.Config) -> SiteStatus:
     )
 
 
-def main(environ):
+def make_producer(cfg: config.Config) -> kafka.Producer:
+    return kafka.Producer({
+        'bootstrap.servers': cfg.kafka_servers,
+        'client.id': socket.gethostname(),
+    })
+
+
+def send_status(
+        cfg: config.Config,
+        producer: kafka.Producer,
+        status: SiteStatus) -> bool:
+    """Send site status event to Kafka.
+
+    :return: true if the event was successfully delivered
+    """
+    success: bool = False
+
+    def callback(err, msg):
+        print(f'callback: err={err} msg={msg}')
+        nonlocal success
+        if err is not None:
+            logger.error('Failed to deliver status to Kafka: %s: %s', msg, err)
+            success = False
+        else:
+            logger.debug('Message produced: %s', msg)
+            success = True
+        print('success 2:', success)
+
+    logger.debug('Sending status %r to Kafka', status)
+    producer.produce(
+        cfg.kafka_topic,
+        key=status.url,
+        value=json.dumps(dataclasses.asdict(status)),
+        callback=callback,
+    )
+    print('success 1:', success)
+    producer.poll(5)            # wait a bit for a callback
+    print('success 3:', success)
+    return success
+
+
+def main(environ) -> int:
+    logging.basicConfig(
+        format='[%(asctime)s %(levelname)-1.1s %(name)s] %(message)s',
+        level=logging.DEBUG)
     cfg = config.Config(environ)
+    producer = make_producer(cfg)
+
     status = check_site(cfg)
-    print(dataclasses.asdict(status))
+    success = send_status(cfg, producer, status)
+    producer.flush(5)
+    return 0 if success else 1
 
 
 if __name__ == '__main__':
-    main(os.environ)
+    sys.exit(main(os.environ))
