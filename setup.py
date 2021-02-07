@@ -10,6 +10,8 @@ install_requires = [
 dev_requires = [
     'flake8 >= 3.8',
     'mypy >= 0.800',
+    'pytest >= 6.2',
+    'VCRpy >= 4.1',
 ]
 
 setup(

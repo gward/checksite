@@ -1,4 +1,5 @@
 #!/bin/sh
-test -e
-flake8 checksite
-mypy --check-untyped-defs --ignore-missing-imports checksite
+set -e
+flake8 checksite tests
+mypy --check-untyped-defs --ignore-missing-imports checksite tests
+pytest --tb=short -q tests

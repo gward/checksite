@@ -1,0 +1,28 @@
+interactions:
+- request:
+    body: null
+    headers:
+      Accept:
+      - '*/*'
+    method: GET
+    uri: http://localhost/
+  response:
+    body:
+      string: |
+        <html>
+        <head><title>404 Not Found</title></head>
+        <body>
+        <center><h1>404 Not Found</h1></center>
+        Welcome to notfound
+        <hr><center>nginx/1.18.0 (Ubuntu)</center>
+        </body>
+        </html>
+    headers:
+      Content-Type:
+      - text/html
+      Transfer-Encoding:
+      - chunked
+    status:
+      code: 404
+      message: Not Found
+version: 1

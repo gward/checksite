@@ -1,0 +1,25 @@
+interactions:
+- request:
+    body: null
+    headers:
+      Accept:
+      - '*/*'
+    method: GET
+    uri: http://localhost/
+  response:
+    body:
+      string: |
+        <!DOCTYPE html>
+        <html>
+        <head>
+        <title>Welcome to !?!%$^</title>
+        <p>this is not the expected response content</p>
+    headers:
+      Content-Type:
+      - text/html
+      Transfer-Encoding:
+      - chunked
+    status:
+      code: 200
+      message: OK
+version: 1
