@@ -7,7 +7,7 @@ import os
 import socket
 import sys
 import time
-from typing import Optional, Callable
+from typing import Optional, Callable, Mapping
 
 import confluent_kafka as kafka
 import requests
@@ -76,7 +76,7 @@ def send_status(
     )
 
 
-def main(environ) -> int:
+def main(environ: Mapping[str, str]) -> int:
     logging.basicConfig(
         format='[%(asctime)s %(levelname)-1.1s %(name)s] %(message)s',
         level=logging.DEBUG)
