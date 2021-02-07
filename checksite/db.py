@@ -8,6 +8,8 @@ from typing import Dict
 import psycopg2
 import psycopg2.errors
 
+from . import models
+
 logger = logging.getLogger(__name__)
 
 
@@ -17,6 +19,7 @@ class StatusDB:
     def __init__(self, db_url: str):
         self.db_url = db_url
         self.conn = psycopg2.connect(self.db_url)
+        self.commit = self.conn.commit
 
     def check_schema(self):
         """Safely ensure that the database schema is a good state.
@@ -31,7 +34,7 @@ class StatusDB:
         if version != str(self.schema_version):
             self._init_schema()
 
-        self.conn.commit()
+        self.commit()
 
     def _get_metadata(self) -> Dict[str, str]:
         try:
@@ -68,3 +71,26 @@ class StatusDB:
             curs.execute(
                 'INSERT INTO metadata VALUES (%s, %s)',
                 ('schema_version', self.schema_version))
+
+    def write_status(self, status: models.SiteStatus):
+
+        """Write a single site status event to the events table.
+
+        Does NOT commit a transactions. Transaction boundaries must be
+        managed outside of this class.
+        """
+        with self.conn.cursor() as curs:
+            curs.execute(
+                '''
+                INSERT INTO events
+                  (ts, url, elapsed, error, status, body_prefix, content_match)
+                VALUES
+                  (%s, %s, %s, %s, %s, %s, %s)
+                ''',
+                (status.timestamp,
+                 status.url,
+                 status.elapsed,
+                 status.error,
+                 status.status,
+                 status.body_prefix,
+                 status.content_match))

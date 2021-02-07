@@ -1,4 +1,5 @@
 import dataclasses
+import datetime
 import json
 from unittest import mock
 
@@ -25,12 +26,17 @@ def test_get_events(cfg):
         error=None,
         status=201,
         content_match='foo',
+        timestamp=datetime.datetime(1970, 1, 1, 0, 0, 1, tzinfo=consumer.UTC),
     )
 
     # one good message, one error message
     msg1 = mock.Mock(autospec=kafka.Message)
     msg1.error.return_value = None
-    msg1.value.return_value = json.dumps(dataclasses.asdict(expect_status))
+    msg1.value.return_value = json.dumps({
+        **dataclasses.asdict(expect_status),
+        'timestamp': '1970-01-01 00:00:01',
+    })
+    msg1.timestamp.return_value = (kafka.TIMESTAMP_CREATE_TIME, 1000)
     msg2 = mock.Mock(autospec=kafka.Message)
     msg2.error.return_value = 'kafka broke'
     mock_consumer.poll.side_effect = [

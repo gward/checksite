@@ -1,5 +1,6 @@
 """consume site status events from Kafka and write them to PostgreSQL"""
 
+import datetime
 import logging
 import json
 import os
@@ -8,6 +9,8 @@ from typing import Iterator, Mapping
 import confluent_kafka as kafka
 
 from . import config, models, db
+
+UTC = datetime.timezone.utc
 
 logger = logging.getLogger(__name__)
 
@@ -32,6 +35,12 @@ def get_events(
         if msg.error():
             raise kafka.KafkaException(msg.error())
         payload = json.loads(msg.value())
+
+        (ts_type, ts_value) = msg.timestamp()
+        assert ts_type != kafka.TIMESTAMP_NOT_AVAILABLE, \
+            'messages without timestamp are not supported'
+        payload['timestamp'] = datetime.datetime.fromtimestamp(
+            ts_value / 1000, UTC)
         yield models.SiteStatus(**payload)
 
 
@@ -48,6 +57,8 @@ def main(environ: Mapping[str, str]):
     try:
         for status in get_events(cfg, consumer):
             logger.info('%r', status)
+            status_db.write_status(status)
+            status_db.commit()
     finally:
         consumer.close()
 

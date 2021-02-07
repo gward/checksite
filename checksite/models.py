@@ -1,6 +1,7 @@
 """Data models for checksite"""
 
 import dataclasses
+import datetime
 from typing import Optional
 
 
@@ -26,3 +27,8 @@ class SiteStatus:
     # subset of response body that matched content_regex; None if it didn't
     # match or there was any error
     content_match: Optional[str] = None
+
+    # Kafka timestamp for this event (optional because only the consumer
+    # cares about this; note that it is NOT NULL in the database schema,
+    # which forces the consumer to care)
+    timestamp: Optional[datetime.datetime] = None
