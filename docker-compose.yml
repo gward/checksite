@@ -1,0 +1,19 @@
+services:
+  producer:
+    build:
+      dockerfile: docker/checksite.dockerfile
+      context: .
+    container_name: producer
+    volumes:
+      - .:/src
+    env_file:
+      config.env
+    command: ./checksite-cli.py producer
+  consumer:
+    image: checksite_producer
+    container_name: consumer
+    volumes:
+      - .:/src
+    env_file:
+      config.env
+    command: ./checksite-cli.py consumer

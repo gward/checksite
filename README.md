@@ -6,9 +6,9 @@ Check the status of a web site and feed status updates into a Kafka instance. Co
 Building
 --------
 
-To build docker images:
+To build docker image:
 
-  docker build --tag checksite:latest -f docker/checksite.dockerfile .
+  docker-compose build
 
 
 Testing
@@ -16,4 +16,4 @@ Testing
 
 To run the tests:
 
-  docker run --rm -v $PWD:/src checksite:latest ./test.sh
+  docker-compose run --rm producer ./test.sh
