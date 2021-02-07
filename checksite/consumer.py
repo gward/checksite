@@ -7,7 +7,7 @@ from typing import Iterator, Mapping
 
 import confluent_kafka as kafka
 
-from . import config, models
+from . import config, models, db
 
 logger = logging.getLogger(__name__)
 
@@ -40,8 +40,11 @@ def main(environ: Mapping[str, str]):
         format='[%(asctime)s %(levelname)-1.1s %(name)s] %(message)s',
         level=logging.DEBUG)
     cfg = config.Config(environ)
-    consumer = make_consumer(cfg)
 
+    status_db = db.StatusDB(cfg.postgresql_url)
+    status_db.check_schema()
+
+    consumer = make_consumer(cfg)
     try:
         for status in get_events(cfg, consumer):
             logger.info('%r', status)

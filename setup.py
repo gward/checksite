@@ -3,6 +3,7 @@ from setuptools import setup
 # libraries needed at runtime in a production environment
 install_requires = [
     'confluent_kafka >= 1.6.0',
+    'psycopg2_binary >= 2.8.6',
     'requests >= 2.25.1',
 ]
 
