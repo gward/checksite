@@ -3,7 +3,7 @@
 import logging
 import json
 import os
-from typing import Iterable, Mapping
+from typing import Iterator, Mapping
 
 import confluent_kafka as kafka
 
@@ -21,7 +21,7 @@ def make_consumer(cfg: config.Config) -> kafka.Consumer:
 
 def get_events(
         cfg: config.Config,
-        consumer: kafka.Consumer) -> Iterable[models.SiteStatus]:
+        consumer: kafka.Consumer) -> Iterator[models.SiteStatus]:
     """Read events from Kafka and yield a sequence of SiteStatus objects"""
     consumer.subscribe([cfg.kafka_topic])
     logger.info('Waiting for events from Kafka')
