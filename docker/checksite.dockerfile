@@ -1,16 +1,15 @@
 FROM python:3.9-slim
 
+# just enough to install dependencies
+RUN mkdir /src /src/checksite
+ADD requirements.txt setup.py /src/
+WORKDIR /src
+
 # runtime dependencies
-RUN pip install \
-  confluent-kafka \
-  requests
+RUN pip install -r requirements.txt
 
 # build/dev dependencies
-RUN pip install \
-  flake8 \
-  mypy
+RUN pip install -e '.[dev]'
 
-# application code (will be overridden with a mount for development)
-RUN mkdir /src
+# the rest of the code
 ADD . /src
-WORKDIR /src

@@ -8,7 +8,7 @@ Building
 
 To build docker images:
 
-  docker build --tag checksite-producer:latest -f docker/producer.dockerfile .
+  docker build --tag checksite:latest -f docker/checksite.dockerfile .
 
 
 Testing
@@ -16,4 +16,4 @@ Testing
 
 To run the tests:
 
-  docker run --rm -v $PWD:/src checksite-producer:latest ./test.sh
+  docker run --rm -v $PWD:/src checksite:latest ./test.sh
