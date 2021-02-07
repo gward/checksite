@@ -7,7 +7,7 @@ import os
 import socket
 import sys
 import time
-from typing import Optional
+from typing import Optional, Callable
 
 import confluent_kafka as kafka
 import requests
@@ -87,24 +87,10 @@ def make_producer(cfg: config.Config) -> kafka.Producer:
 def send_status(
         cfg: config.Config,
         producer: kafka.Producer,
-        status: SiteStatus) -> bool:
+        status: SiteStatus,
+        callback: Callable):
     """Send site status event to Kafka.
-
-    :return: true if the event was successfully delivered
     """
-    success: bool = False
-
-    def callback(err, msg):
-        print(f'callback: err={err} msg={msg}')
-        nonlocal success
-        if err is not None:
-            logger.error('Failed to deliver status to Kafka: %s: %s', msg, err)
-            success = False
-        else:
-            logger.debug('Message produced: %s', msg)
-            success = True
-        print('success 2:', success)
-
     logger.debug('Sending status %r to Kafka', status)
     producer.produce(
         cfg.kafka_topic,
@@ -112,10 +98,6 @@ def send_status(
         value=json.dumps(dataclasses.asdict(status)),
         callback=callback,
     )
-    print('success 1:', success)
-    producer.poll(5)            # wait a bit for a callback
-    print('success 3:', success)
-    return success
 
 
 def main(environ) -> int:
@@ -125,9 +107,26 @@ def main(environ) -> int:
     cfg = config.Config(environ)
     producer = make_producer(cfg)
 
+    # Detecting failure to send an event to Kafka is tricky. Because the
+    # client library aggressively retries, failures tend to disappear
+    # inside the library. That's great if there's a transient problem
+    # reaching Kafka that will be resolved in a few seconds.
+    #
+    # But if kafka_servers is misconfigured, or the server in question is
+    # permanently down, it's a bit harder to figure things out. So I let
+    # the library retry for 15 sec and then, if we did not get positive
+    # confirmation of delivery, assume failure.
+
+    success = False             # assume kafka_callback() never called
+
+    def kafka_callback(err, msg):
+        logger.debug('callback invoked: err=%s msg=%s', err, msg)
+        nonlocal success
+        success = (err is None)
+
     status = check_site(cfg)
-    success = send_status(cfg, producer, status)
-    producer.flush(5)
+    send_status(cfg, producer, status, kafka_callback)
+    producer.flush(15)          # give up on kafka after 15 s
     return 0 if success else 1
 
 
