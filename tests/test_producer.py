@@ -1,10 +1,13 @@
+import dataclasses
+import json
 from unittest import mock
 
+import confluent_kafka as kafka
 import requests
 import requests.exceptions
 import vcr
 
-from checksite import producer
+from checksite import models, producer
 
 
 # The happy path: we get an HTTP response, status 200, content matches the
@@ -61,3 +64,34 @@ def test_check_site_error(cfg):
     assert status.elapsed >= 0
     assert status.body_prefix is None
     assert status.content_match is None
+
+
+def test_make_producer(cfg):
+    with mock.patch('socket.gethostname', return_value='host01'):
+        prod = producer.make_producer(cfg)
+
+    # Hard to test more than this, since the Producer object does not
+    # appear to have any documented attributes that I can use to assert
+    # that it was correctly constructed.
+    assert isinstance(prod, kafka.Producer)
+
+
+def test_send_status(cfg):
+    mock_producer = mock.Mock(autospec=kafka.Producer)
+    status = models.SiteStatus(
+        url='http://foo',
+        elapsed=17,
+        error=None,
+        status=200,
+        content_match='abc')
+    callback = lambda *args: None
+    producer.send_status(cfg, mock_producer, status, callback)
+
+    mock_producer.produce.assert_called_once_with(
+        'checksite',
+        key='http://foo',
+        value=mock.ANY,
+        callback=callback)
+    value = mock_producer.produce.call_args_list[0][1]['value']
+    value = json.loads(value)
+    assert value == dataclasses.asdict(status)
