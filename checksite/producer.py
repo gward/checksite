@@ -12,36 +12,12 @@ from typing import Optional, Callable
 import confluent_kafka as kafka
 import requests
 
-from . import config
+from . import config, models
 
 logger = logging.getLogger(__name__)
 
 
-@dataclasses.dataclass
-class SiteStatus:
-    # the site that was requested (from configuration)
-    url: str
-
-    # time to fetch the entire page, in milliseconds
-    elapsed: int
-
-    # if we got a network error (eg. connection refused), an error message
-    # describing the error
-    error: Optional[str]
-
-    # if we got a repsonse, HTTP status code; None on network error
-    status: Optional[int]
-
-    # if we got an HTTP response with non-200 status, the first 500
-    # characters of the response body
-    body_prefix: Optional[str] = None
-
-    # subset of response body that matched content_regex; None if it didn't
-    # match or there was any error
-    content_match: Optional[str] = None
-
-
-def check_site(cfg: config.Config) -> SiteStatus:
+def check_site(cfg: config.Config) -> models.SiteStatus:
     # Using requests without an explicit Session always opens a new TCP
     # connection. Normally, I would avoid this behaviour! But for checking
     # availability, it seems worthwhile to ensure that a new connection
@@ -67,7 +43,7 @@ def check_site(cfg: config.Config) -> SiteStatus:
     elif status is not None:
         body_prefix = resp.text[0:500]
 
-    return SiteStatus(
+    return models.SiteStatus(
         url=cfg.site_url,
         error=error,
         status=status,
@@ -87,7 +63,7 @@ def make_producer(cfg: config.Config) -> kafka.Producer:
 def send_status(
         cfg: config.Config,
         producer: kafka.Producer,
-        status: SiteStatus,
+        status: models.SiteStatus,
         callback: Callable):
     """Send site status event to Kafka.
     """
