@@ -62,3 +62,14 @@ That done, you can run the producer and consumer concurrently, in separate termi
     docker-compose run --rm --user $(id -u) consumer
 
 (It works fine with `docker-compose up`, but that doesn't support `--user`, and it was too much bother to create a dedicated user in the container image.)
+
+Caveats
+-------
+
+* If you run the consumer before the first run of the producer, the Kafka topic does not exist yet. With Kafka running in Aiven, that causes the consumer to crash. I decided to live with this bug: it only affects the first run, and in real life there would be a service manager that retries on crash. So once the producer runs and creates the topic, the consumer should be fine.
+
+* No unit tests for the database module. Doing this right would require adding a PostgreSQL container to docker-compose and ensuring that the unit tests are configured to access that database. It's not impossible, but a lot of trouble to go to for a small project.
+
+* Unit test coverage isn't great: getting it up would require a lot of mocking of confluent_kafka, and I'm not sure that was the best choice of client library. Now that I have something working, I'd rather invest the effort in finding the best Python client than in writing unit tests based on my first choice. Also, heavily mock-based unit tests are a pain.
+
+* No dedicated user in the container; I just run using the host user's UID. Again this is not insurmountable, but not worth the trouble.
