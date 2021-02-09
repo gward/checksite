@@ -17,7 +17,7 @@ logger = logging.getLogger(__name__)
 
 def make_consumer(cfg: config.Config) -> kafka.Consumer:
     return kafka.Consumer({
-        'bootstrap.servers': cfg.kafka_servers,
+        **cfg.get_kafka_config(),
         'group.id': 'checksite',
     })
 

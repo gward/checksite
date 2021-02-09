@@ -55,7 +55,7 @@ def check_site(cfg: config.Config) -> models.SiteStatus:
 
 def make_producer(cfg: config.Config) -> kafka.Producer:
     return kafka.Producer({
-        'bootstrap.servers': cfg.kafka_servers,
+        **cfg.get_kafka_config(),
         'client.id': socket.gethostname(),
     })
 
@@ -102,7 +102,7 @@ def main(environ: Mapping[str, str]) -> int:
 
     status = check_site(cfg)
     send_status(cfg, producer, status, kafka_callback)
-    producer.flush(15)          # give up on kafka after 15 s
+    producer.flush(15)          # give up on kafka after a bit
     return 0 if success else 1
 
 
