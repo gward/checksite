@@ -29,7 +29,7 @@ Test
 
 To run the tests:
 
-    docker-compose run --rm producer ./test.sh
+    docker-compose run --rm --user $(id -u) producer ./test.sh
 
 
 Run
@@ -56,6 +56,9 @@ Prerequisites:
 
   in `config.env`. Connectivity is enough: checksite will create the required topic on its first run.
 
-That done, you can run the producer and consumer concurrently:
+That done, you can run the producer and consumer concurrently, in separate terminal windows:
 
-    docker-compose up
+    docker-compose run --rm --user $(id -u) producer
+    docker-compose run --rm --user $(id -u) consumer
+
+(It works fine with `docker-compose up`, but that doesn't support `--user`, and it was too much bother to create a dedicated user in the container image.)
