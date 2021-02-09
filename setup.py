@@ -12,6 +12,7 @@ dev_requires = [
     'flake8 >= 3.8',
     'mypy >= 0.800',
     'pytest >= 6.2',
+    'pytest-cov >= 2.11',
     'VCRpy >= 4.1',
 ]
 
