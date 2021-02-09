@@ -6,6 +6,7 @@ from typing import Mapping
 
 class Config:
     site_url: str               # the web site to check
+    check_delay: int            # delay (seconds) between checks
     content_regex: re.Pattern   # content must match this regex
     kafka_topic: str
     kafka_servers: str          # comma-separated list: host:port,...
@@ -14,6 +15,7 @@ class Config:
 
     def __init__(self, environ: Mapping[str, str]):
         self.site_url = environ["CK_SITE_URL"]
+        self.check_delay = int(environ["CK_CHECK_DELAY"])
         self.content_regex = re.compile(
             environ["CK_CONTENT_REGEX"],
             re.DOTALL)

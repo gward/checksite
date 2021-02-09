@@ -7,7 +7,7 @@ import os
 import socket
 import sys
 import time
-from typing import Optional, Callable, Mapping
+from typing import Optional, Mapping
 
 import confluent_kafka as kafka
 from confluent_kafka import admin
@@ -82,8 +82,7 @@ def make_producer(cfg: config.Config) -> kafka.Producer:
 def send_status(
         cfg: config.Config,
         producer: kafka.Producer,
-        status: models.SiteStatus,
-        callback: Callable):
+        status: models.SiteStatus):
     """Send site status event to Kafka.
     """
     logger.debug('Sending status %r to Kafka', status)
@@ -91,7 +90,6 @@ def send_status(
         cfg.kafka_topic,
         key=status.url,
         value=json.dumps(dataclasses.asdict(status)),
-        callback=callback,
     )
 
 
@@ -111,21 +109,20 @@ def main(environ: Mapping[str, str]) -> int:
     # reaching Kafka that will be resolved in a few seconds.
     #
     # But if kafka_servers is misconfigured, or the server in question is
-    # permanently down, it's a bit harder to figure things out. So I let
-    # the library retry for 15 sec and then, if we did not get positive
-    # confirmation of delivery, assume failure.
+    # permanently down, there's not much we can do. If the server is
+    # down/unreachable at startup, create_topic() retries for a while and
+    # then fails. This code never has a chance to run. If the producer
+    # starts up OK and then Kafka goes away, it's _possible_ to detect that
+    # with an elaborate dance involving callbacks and producer.flush(). Not
+    # clear it's worth the trouble; Kafka _is_ supposed to be highly
+    # available, after all.
+    #
+    # So I'm just blithely assuming that sending events eventually succeeds.
 
-    success = False             # assume kafka_callback() never called
-
-    def kafka_callback(err, msg):
-        logger.debug('callback invoked: err=%s msg=%s', err, msg)
-        nonlocal success
-        success = (err is None)
-
-    status = check_site(cfg)
-    send_status(cfg, producer, status, kafka_callback)
-    producer.flush(15)          # give up on kafka after a bit
-    return 0 if success else 1
+    while True:
+        status = check_site(cfg)
+        send_status(cfg, producer, status)
+        time.sleep(cfg.check_delay)
 
 
 if __name__ == '__main__':

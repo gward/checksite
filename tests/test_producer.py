@@ -84,14 +84,12 @@ def test_send_status(cfg):
         error=None,
         status=200,
         content_match='abc')
-    callback = lambda *args: None
-    producer.send_status(cfg, mock_producer, status, callback)
+    producer.send_status(cfg, mock_producer, status)
 
     mock_producer.produce.assert_called_once_with(
         'checksite',
         key='http://foo',
-        value=mock.ANY,
-        callback=callback)
+        value=mock.ANY)
     value = mock_producer.produce.call_args_list[0][1]['value']
     value = json.loads(value)
     assert value == dataclasses.asdict(status)

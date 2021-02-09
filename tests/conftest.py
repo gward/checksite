@@ -7,6 +7,7 @@ from checksite import config
 def cfgdict():
     return {
         'CK_SITE_URL': 'http://localhost/',
+        'CK_CHECK_DELAY': '15',
         'CK_CONTENT_REGEX': 'Welcome to \\w+',
         'CK_KAFKA_TOPIC': 'checksite',
         'CK_KAFKA_SERVERS': '',
