@@ -16,4 +16,4 @@ except IndexError:
 except ModuleNotFoundError:
     sys.exit('error: invalid command: %s' % (cmd,))
 else:
-    mod.main(os.environ)
+    sys.exit(mod.main(os.environ))
