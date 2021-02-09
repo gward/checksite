@@ -10,6 +10,7 @@ import time
 from typing import Optional, Callable, Mapping
 
 import confluent_kafka as kafka
+from confluent_kafka import admin
 import requests
 
 from . import config, models
@@ -53,6 +54,24 @@ def check_site(cfg: config.Config) -> models.SiteStatus:
     )
 
 
+def create_topic(cfg: config.Config):
+    """Ensure that the required Kafka topic exists."""
+    # based on code in https://github.com/confluentinc/confluent-kafka-python
+    client = admin.AdminClient(cfg.get_kafka_config())
+    topic = admin.NewTopic(
+        cfg.kafka_topic, num_partitions=3, replication_factor=1)
+    topic_map = client.create_topics([topic])
+
+    for (topic, future) in topic_map.items():
+        try:
+            future.result()
+            logger.info('Topic %s created', topic)
+        except Exception as err:
+            if err.args[0].code() != kafka.KafkaError.TOPIC_ALREADY_EXISTS:
+                raise
+            logger.debug('Topic %s already exists', topic)
+
+
 def make_producer(cfg: config.Config) -> kafka.Producer:
     return kafka.Producer({
         **cfg.get_kafka_config(),
@@ -81,6 +100,9 @@ def main(environ: Mapping[str, str]) -> int:
         format='[%(asctime)s %(levelname)-1.1s %(name)s] %(message)s',
         level=logging.DEBUG)
     cfg = config.Config(environ)
+
+    create_topic(cfg)
+
     producer = make_producer(cfg)
 
     # Detecting failure to send an event to Kafka is tricky. Because the
