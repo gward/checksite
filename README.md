@@ -73,3 +73,5 @@ Caveats
 * Unit test coverage isn't great: getting it up would require a lot of mocking of confluent_kafka, and I'm not sure that was the best choice of client library. Now that I have something working, I'd rather invest the effort in finding the best Python client than in writing unit tests based on my first choice. Also, heavily mock-based unit tests are a pain.
 
 * No dedicated user in the container; I just run using the host user's UID. Again this is not insurmountable, but not worth the trouble.
+
+* Creating a dedicated PostgreSQL user and database is entirely supported, but it's not done automatically or even part of the documented process. I just ran it with Aiven's `defaultdb` and `avnadmin`, which is less than ideal.
